@@ -1,0 +1,20 @@
+# Backend
+Flask==3.1.1
+flask_cors==6.0.1
+gunicorn==23.0.0
+
+# LangChain and ecosystem - let pip resolve versions
+langchain_google_genai
+langchain-community
+langchain-core
+faiss-cpu
+# Vector store and embeddings
+sentence-transformers
+fastembed
+
+# HTML parsing
+beautifulsoup4==4.13.4
+
+# Utilities
+python-dotenv==1.1.1
+requests==2.32.4
