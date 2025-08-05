@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 # Configure CORS for Vercel frontend
 CORS(app, origins=[
-    "https://your-vercel-app.vercel.app",  # Replace with your Vercel URL
+    "https://bee-well-ai.vercel.app/",  # Replace with your Vercel URL
     "http://localhost:3000",  # For local development
     "http://127.0.0.1:5500"   # For local development
 ])
