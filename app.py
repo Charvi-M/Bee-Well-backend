@@ -6,11 +6,16 @@ import os
 app = Flask(__name__)
 
 # Configure CORS for Vercel frontend
-CORS(app, origins=[
-    "https://bee-well-ai.vercel.app/",  # Replace with your Vercel URL
-    "http://localhost:3000",  # For local development
-    "http://127.0.0.1:5500"   # For local development
-])
+CORS(app, 
+     origins=[
+         "https://bee-well-ai.vercel.app",
+         "http://localhost:3000",
+         "http://127.0.0.1:5500"
+     ],
+     methods=['GET', 'POST', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=True
+)
 
 # Global user session state (in-memory for now)
 user_session_data = {}
@@ -18,6 +23,11 @@ user_session_data = {}
 @app.route("/")
 def index():
     return {"message": "BeeWell Backend API is running!"}
+
+@app.route('/api/userdata', methods=['OPTIONS'])
+@app.route('/api/chat', methods=['OPTIONS'])
+def handle_preflight():
+    return '', 200
 
 @app.route("/api/userdata", methods=["POST"])
 def receive_user_data():
