@@ -5,7 +5,7 @@ import os
 
 app = Flask(__name__)
 
-# Configure CORS for Vercel frontend
+#Cross Origin Resource Sharing for Vercel frontend
 CORS(app, 
      origins=[
          "https://bee-well-ai.vercel.app",
@@ -17,7 +17,7 @@ CORS(app,
      supports_credentials=True
 )
 
-# Global user session state (in-memory for now)
+#Global user session state (in-memory for now)
 user_session_data = {}
 
 @app.route("/")
@@ -34,7 +34,7 @@ def receive_user_data():
     data = request.get_json()
     name = data.get("userName", "unknown")
     
-    # Store user profile in session data
+    #Store user profile in session data
     user_session_data["user"] = {
         "name": name,
         "age": data.get("userAge", ""),

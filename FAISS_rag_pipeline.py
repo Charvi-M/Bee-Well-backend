@@ -81,7 +81,7 @@ llm = ChatGoogleGenerativeAI(
         api_key=os.getenv("GEMINI_API_KEY"),
     )
 
-# --- Memory ---
+
 memory = ConversationBufferMemory(
     memory_key="chat_history",
     return_messages=True,
@@ -96,20 +96,20 @@ therapy_base_chain = ConversationalRetrievalChain.from_llm(
     output_key="answer",
     verbose=True
 )
-# --- Classifier ---
+#Classifier
 def classify_agent(user_input: str) -> str:
     prompt = classification_prompt.format(question=user_input)
     response = llm.invoke(prompt)
     result = response.content.strip().lower() if hasattr(response, "content") else str(response).strip().lower()
     return result if result in ["therapist", "resource"] else "therapist"
 
-# --- Therapist Agent ---
+#Therapist Agent
 def therapist_wrapper(user_input, raw_answer, user_profile):
     prompt = therapist_prompt.format(question=user_input, raw_answer=raw_answer, user_profile=user_profile)
     styled = llm.invoke(prompt)
     return styled.content if hasattr(styled, "content") else str(styled)
 
-# --- Resource Agent ---
+#Resource Agent
 def resource_wrapper(user_input, user_profile):
     docs = retrieverResource.invoke(user_input)
     # print("\n[RESOURCE] Retrieved documents:")
@@ -121,7 +121,7 @@ def resource_wrapper(user_input, user_profile):
     styled = llm.invoke(prompt)
     return styled.content if hasattr(styled, "content") else str(styled)
 
-# --- Multiagent Entry Point ---
+#Multiagent chain entry point
 
 def multiagent_chain(user_input: str, user_profile: dict) -> dict:
     agent = classify_agent(user_input)
@@ -131,7 +131,7 @@ def multiagent_chain(user_input: str, user_profile: dict) -> dict:
         answer = resource_wrapper(user_input, profile_summary)
         return {"agent": "Gemini (Resource Assistant)", "response": answer}
     else:
-        # Include user profile context in the question
+        #Include user profile context in the question for better ux and context for gemini
         contextualized_question = f"User Profile: {profile_summary}\nUser Question: {user_input}"
         
         result = therapy_base_chain.invoke({"question": contextualized_question})

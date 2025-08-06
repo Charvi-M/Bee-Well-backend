@@ -39,7 +39,7 @@ def create_vectorstores():
     """Create FAISS vectorstores from documents"""
     print("[INFO] Creating FAISS vectorstores...")
     
-    # Load documents
+    #Load documents
     therapyDocuments = [
         Document(page_content=load_documents("data/therapy/meditations.txt"), metadata={"source": "Meditations"}),
         Document(page_content=load_documents("data/therapy/cleaveland.txt"), metadata={"source": "Cleaveland Clinic"}),
@@ -53,7 +53,7 @@ def create_vectorstores():
         Document(page_content=load_documents("data/resources/who_psych_guidelines.txt"), metadata={"source": "WHO Guidelines"}),
     ]
 
-    # Filter out empty documents
+    #Filter out empty documents
     therapyDocuments = [doc for doc in therapyDocuments if doc.page_content.strip()]
     resourceDocuments = [doc for doc in resourceDocuments if doc.page_content.strip()]
 
@@ -66,24 +66,24 @@ def create_vectorstores():
         return False
 
     try:
-        # Split into smaller chunks
+        #Split into smaller chunks
         splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
         split_therapy_docs = splitter.split_documents(therapyDocuments)
         split_resource_docs = splitter.split_documents(resourceDocuments)
 
         print(f"[INFO] Created {len(split_therapy_docs)} therapy chunks and {len(split_resource_docs)} resource chunks")
 
-        # Initialize embedding model
+        #Initialize embedding model
         embedding_model = embedding_model
 
-        # Build FAISS vectorstores
+        #Build FAISS vectorstores
         print("[INFO] Building therapy vectorstore...")
         therapy_vectorstore = FAISS.from_documents(split_therapy_docs, embedding_model)
         
         print("[INFO] Building resource vectorstore...")
         resource_vectorstore = FAISS.from_documents(split_resource_docs, embedding_model)
 
-        # Save vectorstores locally
+        #Save vectorstores locally
         print("[INFO] Saving vectorstores...")
         therapy_vectorstore.save_local("faiss_therapy_index")
         resource_vectorstore.save_local("faiss_resource_index")
@@ -112,7 +112,7 @@ def main():
         print("[INFO] FAISS vectorstores not found or incomplete.")
         print(f"[INFO] Therapy exists: {therapy_exists}, Resource exists: {resource_exists}")
         
-        # Create vectorstores
+        #Create vectorstores
         success = create_vectorstores()
         if success:
             print("[INFO] Vectorstore preparation completed successfully!")
@@ -124,4 +124,4 @@ def main():
 if __name__ == "__main__":
     success = main()
     if not success:
-        exit(1)  # Exit with error code for build failure
+        exit(1)  #Exit with error code for build failure
