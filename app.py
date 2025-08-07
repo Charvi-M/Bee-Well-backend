@@ -17,36 +17,16 @@ CORS(app,
      supports_credentials=True
 )
 
-#Global user session state (in-memory for now)
-
-user_session_data = {}
 
 @app.route("/")
 def index():
     return {"message": "BeeWell Backend API is running!"}
 
-@app.route('/api/userdata', methods=['OPTIONS'])
+
 @app.route('/api/chat', methods=['OPTIONS'])
 def handle_preflight():
     return '', 200
 
-@app.route("/api/userdata", methods=["POST"])
-def receive_user_data():
-    data = request.get_json()
-    name = data.get("userName", "")
-    
-    #Store user profile in session data
-    user_session_data["user"] = {
-        "name": name,
-        "age": data.get("userAge", ""),
-        "country": data.get("userCountry", ""),
-        "financial": data.get("financialStatus", ""),  
-        "diagnosis": data.get("hasDiagnosis", False),
-        "timestamp": data.get("timestamp", ""),
-        "counter" : data.get("counter", "0")
-    }
-    print(f"[BeeWell] New session started for {name}")
-    return jsonify({"status": "success"})
 
 @app.route("/api/chat", methods=["POST"])
 def chat_handler():
