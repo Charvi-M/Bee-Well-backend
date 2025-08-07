@@ -20,8 +20,6 @@ CORS(app,
 #Global user session state (in-memory for now)
 
 user_session_data = {}
-counter = 0
-key_dict={counter : user_session_data}
 
 @app.route("/")
 def index():
@@ -47,16 +45,14 @@ def receive_user_data():
         "timestamp": data.get("timestamp", ""),
         "counter" : data.get("counter", "0")
     }
-    key_dict[counter] = user_session_data
     print(f"[BeeWell] New session started for {name}")
-    print(f"[BeeWell] User profile: {key_dict[counter]['user']}") 
     return jsonify({"status": "success"})
 
 @app.route("/api/chat", methods=["POST"])
 def chat_handler():
     data = request.get_json()
     user_input = data.get("message", "")
-    user_profile = user_session_data.get("user", {}) 
+    user_profile = data.get("userData", {}) 
 
     print(f"[BeeWell] Received message: {user_input}") 
     print(f"[BeeWell] User profile for chat: {user_profile}") 
