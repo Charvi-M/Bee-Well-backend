@@ -32,7 +32,7 @@ def handle_preflight():
 @app.route("/api/userdata", methods=["POST"])
 def receive_user_data():
     data = request.get_json()
-    name = data.get("userName", "unknown")
+    name = data.get("userName", "")
     
     #Store user profile in session data
     user_session_data["user"] = {
