@@ -40,7 +40,8 @@ def receive_user_data():
         "age": data.get("userAge", ""),
         "country": data.get("userCountry", ""),
         "financial": data.get("financialStatus", ""),  
-        "diagnosis": data.get("hasDiagnosis", False),   
+        "diagnosis": data.get("hasDiagnosis", False),
+        "timestamp": data.get("timestamp", "")
     }
 
     print(f"[BeeWell] New session started for {name}")
