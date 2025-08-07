@@ -20,7 +20,7 @@ CORS(app,
 #Global user session state (in-memory for now)
 
 user_session_data = {}
-counter=0
+counter = 0
 key_dict={counter : user_session_data}
 
 @app.route("/")
@@ -34,7 +34,6 @@ def handle_preflight():
 
 @app.route("/api/userdata", methods=["POST"])
 def receive_user_data():
-    counter = counter+1
     data = request.get_json()
     name = data.get("userName", "")
     
@@ -45,11 +44,12 @@ def receive_user_data():
         "country": data.get("userCountry", ""),
         "financial": data.get("financialStatus", ""),  
         "diagnosis": data.get("hasDiagnosis", False),
-        "timestamp": data.get("timestamp", "")
+        "timestamp": data.get("timestamp", ""),
+        "counter" : data.get("counter", "0")
     }
     key_dict[counter] = user_session_data
     print(f"[BeeWell] New session started for {name}")
-    print(f"[BeeWell] User profile: {user_session_data['user']}") 
+    print(f"[BeeWell] User profile: {key_dict[counter]['user']}") 
     return jsonify({"status": "success"})
 
 @app.route("/api/chat", methods=["POST"])
