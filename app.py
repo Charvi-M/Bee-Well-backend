@@ -27,29 +27,47 @@ def normalize_user_profile(user_data):
         'timestamp': user_data.get('timestamp', '')
     }
 
+def convert_frontend_chat_to_backend_format(frontend_chat_history):
+    """Convert frontend chat history format to backend expected format"""
+    if not frontend_chat_history:
+        return []
+    
+    backend_format = []
+    for message in frontend_chat_history:
+        backend_format.append({
+            'sender': message.get('sender', ''),
+            'content': message.get('content', ''),
+            'agentType': message.get('agentType', ''),
+            'timestamp': message.get('timestamp', '')
+        })
+    
+    return backend_format
 
 @app.route("/")
 def index():
     return {"message": "BeeWell Backend API is running!"}
 
-
 @app.route('/api/chat', methods=['OPTIONS'])
 def handle_preflight():
     return '', 200
-
 
 @app.route("/api/chat", methods=["POST"])
 def chat_handler():
     data = request.get_json()
     user_input = data.get("message", "")
     raw_user_profile = data.get("user_data", {})
+    frontend_chat_history = data.get("chat_history", [])  # Get chat history from frontend
+    
     user_profile = normalize_user_profile(raw_user_profile)
+    chat_history = convert_frontend_chat_to_backend_format(frontend_chat_history)
 
     print(f"[BeeWell] Received message: {user_input}") 
-    print(f"[BeeWell] User profile for chat: {user_profile}") 
+    print(f"[BeeWell] User profile for chat: {user_profile}")
+    print(f"[BeeWell] Chat history length: {len(chat_history)}")
 
     try:
-        result = multiagent_chain(user_input, user_profile)
+        # Pass chat history to the multiagent chain
+        result = multiagent_chain(user_input, user_profile, chat_history)
         print(f"[BeeWell] AI Response: {result}")
         
         return jsonify({
@@ -64,6 +82,5 @@ def chat_handler():
         }), 500
 
 if __name__ == "__main__":
-
     port = int(os.environ.get('PORT', 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
