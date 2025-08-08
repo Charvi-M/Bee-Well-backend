@@ -152,10 +152,11 @@ Knowledge Base Information: "{raw_answer}"
 Remember this client's information from their profile. You can refer to their name, age, country, and other details naturally in conversation.
                                   
 If the user provides symptoms, you must:
-1. List all possible disorders having those symptoms as possible diagnoses in bullet points.
-2. Include a disclaimer that you are an AI agent, not a professional.
-3. Ask if they want professional help or want to talk about it
-4. If they want to talk, provide gentle and supportive guidance.
+1. Give a clear list of all possible disorders having those symptoms in bullet points.
+2. Specify which among these could be the most probable diagnosis.
+3. Include a disclaimer that you are an AI agent, not a professional.
+4. Ask if they want professional help or want to talk about it
+5. If they want to talk, provide gentle and supportive guidance.
 
 INSTRUCTIONS:
 1. You MUST respond based on information in the "Knowledge Base Information" above.
