@@ -126,7 +126,8 @@ def resource_wrapper(user_input, user_profile):
 def multiagent_chain(user_input: str, user_profile: dict) -> dict:
     agent = classify_agent(user_input)
     profile_summary = f"Country: {user_profile.get('country', 'unknown')}, Financial: {user_profile.get('financial', 'unknown')}, Name: {user_profile.get('name', 'unknown')}, Age: {user_profile.get('age', 'unknown')}"
-
+    print(f"[DEBUG] Received user_profile: {user_profile}")
+    print(f"[DEBUG] Looking for userName: {user_profile.get('userName', 'NOT_FOUND')}")
     if agent == "resource":
         answer = resource_wrapper(user_input, profile_summary)
         return {"agent": "Gemini (Resource Assistant)", "response": answer}

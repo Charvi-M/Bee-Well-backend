@@ -17,6 +17,16 @@ CORS(app,
      supports_credentials=True
 )
 
+def normalize_user_profile(user_data):
+    return {
+        'name': user_data.get('userName', ''),
+        'age': user_data.get('userAge', ''),
+        'country': user_data.get('userCountry', ''),
+        'financial': user_data.get('financialStatus', ''),
+        'hasDiagnosis': user_data.get('hasDiagnosis', False),
+        'timestamp': user_data.get('timestamp', '')
+    }
+
 
 @app.route("/")
 def index():
@@ -32,7 +42,8 @@ def handle_preflight():
 def chat_handler():
     data = request.get_json()
     user_input = data.get("message", "")
-    user_profile = data.get("user_data", {}) 
+    raw_user_profile = data.get("user_data", {})
+    user_profile = normalize_user_profile(raw_user_profile)
 
     print(f"[BeeWell] Received message: {user_input}") 
     print(f"[BeeWell] User profile for chat: {user_profile}") 
