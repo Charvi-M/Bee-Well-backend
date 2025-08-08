@@ -32,7 +32,7 @@ def handle_preflight():
 def chat_handler():
     data = request.get_json()
     user_input = data.get("message", "")
-    user_profile = data.get("userData", {}) 
+    user_profile = data.get("user_data", {}) 
 
     print(f"[BeeWell] Received message: {user_input}") 
     print(f"[BeeWell] User profile for chat: {user_profile}") 
