@@ -149,10 +149,18 @@ Previous Conversation: {chat_history}
 Client's Current Question: {question}
 Knowledge Base Information: "{raw_answer}"
 
+Remember this client's information from their profile. You can refer to their name, age, country, and other details naturally in conversation.
+                                  
+If the user provides symptoms, you must:
+1. List possible diagnoses in bullet points
+2. Include a disclaimer that you are an AI agent, not a professional
+3. Ask if they want professional help or want to talk about it
+4. If they want to talk, provide gentle and supportive guidance
+
 CRITICAL INSTRUCTIONS:
 1. You MUST ONLY respond based on information in the "Knowledge Base Information" above
-2. If the Knowledge Base Information is empty, insufficient, or irrelevant, respond EXACTLY with: "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
-3. NEVER make up information or provide generic advice not found in the retrieved knowledge
+2. If the Knowledge Base Information is empty or irrelevant, respond with: "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
+3. NEVER make up information.
 4. Use the client's name from their profile naturally in conversation
 5. Reference their previous messages when relevant and appropriate
 
@@ -162,7 +170,7 @@ Special cases you CAN answer from context:
 - If asked about personal information, use only what's in their profile
 
 If the knowledge base has relevant mental health information, provide a helpful response based ONLY on that information. Avoid using greetings like hello etc. or saying stuff like of course here's a gentle response. 
-
+Be gentle, friendly empathetic and compassionate.
 Your response:
 """)
 
@@ -172,12 +180,15 @@ User Profile: {user_profile}
 Previous Conversation: {chat_history}
 Resources retrieved: "{raw_answer}"
 
+You are a mental health assistant. Suggest **only country-specific and free (if user is financially struggling or on a limited budget otherwise suggest paid resources too)** support links or helpline numbers.
+Keep it short, practical, and clear.
+Output only contact options, links, or phone numbers:                                 
+
 CRITICAL INSTRUCTIONS:
-1. You MUST base your response ONLY on the resources retrieved above
+1. You MUST base your response on the resources retrieved above
 2. If no relevant resources are found or retrieved information is insufficient, respond EXACTLY with: "I don't have specific resource information for your request. Could you try asking for mental health resources in a different way?"
 3. NEVER provide generic advice or make up resources
-4. Only suggest resources that are explicitly mentioned in the retrieved information
-5. Prioritize free resources if user has financial constraints
+4. Prioritize free resources if user has financial constraints
 
 Provide ONLY verified resources from the retrieved information. Keep responses practical and country-specific when available.
 
@@ -204,7 +215,7 @@ retrieverResource = dbResources.as_retriever()
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
-    temperature=0.3,  # Lower temperature for more consistent responses
+    temperature=0.7,
     api_key=os.getenv("GEMINI_API_KEY"),
 )
 
