@@ -30,7 +30,7 @@ class SessionMemoryManager:
     
     def __init__(self):
         self.user_memories: Dict[str, ConversationBufferMemory] = {}
-        self.session_metadata: Dict[str, Dict] = {}  # Store user profile per session
+        self.session_metadata: Dict[str, Dict] = {}  #Store user profile per session
     
     def generate_session_id(self) -> str:
         """Generate a unique session ID using UUID and timestamp"""
@@ -43,7 +43,7 @@ class SessionMemoryManager:
                 memory_key="chat_history",
                 return_messages=True
             )
-            # Store user profile for this session
+            #Store user profile for this session
             self.session_metadata[session_id] = user_profile.copy()
         return self.user_memories[session_id]
     
@@ -53,16 +53,16 @@ class SessionMemoryManager:
             return
             
         memory = self.get_or_create_memory(session_id, user_profile)
-        # Clear existing memory first
+        #Clear existing memory first
         memory.clear()
         
-        # Add messages from local storage
+        #Add messages from local storage
         for message in chat_history:
-            # Skip system messages and welcome messages
+            #Skip system messages and welcome messages
             content = message.get('content', '')
             sender = message.get('sender', '')
             
-            # Skip welcome messages (contain greeting patterns)
+            #Skip welcome messages (contain greeting patterns)
             if sender == 'bot' and any(greeting in content.lower() for greeting in ['hello', 'hi', 'welcome', 'i\'m bee']):
                 continue
                 
@@ -90,7 +90,7 @@ class SessionMemoryManager:
             return "No previous conversation."
         
         formatted = []
-        for msg in messages[-max_messages:]:  # Last N messages
+        for msg in messages[-max_messages:]:  #Last N messages
             if isinstance(msg, HumanMessage):
                 formatted.append(f"User: {msg.content}")
             elif isinstance(msg, AIMessage):
@@ -110,7 +110,7 @@ class SessionMemoryManager:
         memory = self.user_memories[session_id]
         messages = memory.chat_memory.messages
         
-        # Find the last user message
+        #Find the last user message
         for msg in reversed(messages):
             if isinstance(msg, HumanMessage):
                 return msg.content
@@ -127,7 +127,7 @@ class SessionMemoryManager:
     def cleanup_old_sessions(self, max_sessions: int = 100) -> None:
         """Clean up old sessions to prevent memory bloat"""
         if len(self.user_memories) > max_sessions:
-            # Remove oldest sessions (simple FIFO)
+            #Remove oldest sessions (simple FIFO)
             sessions_to_remove = len(self.user_memories) - max_sessions
             for session_id in list(self.user_memories.keys())[:sessions_to_remove]:
                 if session_id in self.user_memories:
@@ -135,12 +135,12 @@ class SessionMemoryManager:
                 if session_id in self.session_metadata:
                     del self.session_metadata[session_id]
 
-# Global memory manager instance
+#Global memory manager instance
 memory_manager = SessionMemoryManager()
 
 embedding_model = FastEmbedLangChainWrapper(model_name="BAAI/bge-small-en-v1.5")
 
-# Updated prompt templates with stricter document adherence
+#Updated prompt templates with stricter document adherence
 therapist_prompt = PromptTemplate(input_variables=["question", "raw_answer", "user_profile", "chat_history"], template="""
 You are a compassionate clinical psychologist speaking directly with a client.
 
@@ -157,7 +157,7 @@ If the user provides symptoms, you must:
 3. Ask if they want professional help or want to talk about it
 4. If they want to talk, provide gentle and supportive guidance
 
-CRITICAL INSTRUCTIONS:
+INSTRUCTIONS:
 1. You MUST ONLY respond based on information in the "Knowledge Base Information" above
 2. If the Knowledge Base Information is empty or irrelevant, respond with: "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
 3. NEVER make up information.
@@ -206,7 +206,7 @@ Input: "{question}"
 Respond with one word only: therapist or resource
 """)
 
-# Load databases
+#Load databases
 dbTherapy = FAISS.load_local("faiss_therapy_index", embedding_model, allow_dangerous_deserialization=True)
 dbResources = FAISS.load_local("faiss_resource_index", embedding_model, allow_dangerous_deserialization=True)
 
@@ -250,51 +250,16 @@ def classify_agent(user_input: str) -> str:
         print(f"Error in classification: {e}")
         return "therapist"
 
-def is_personal_info_question(user_input: str) -> bool:
-    """Check if user is asking about their personal info"""
-    personal_keywords = ['my name', 'what is my name', 'who am i', 'my last message', 'what did i say', 'my age', 'my country']
-    return any(keyword in user_input.lower() for keyword in personal_keywords)
-
-def handle_personal_info_question(user_input: str, session_id: str) -> Optional[str]:
-    """Handle questions about personal information"""
-    user_profile = memory_manager.get_user_profile(session_id)
-    user_input_lower = user_input.lower()
-    
-    if 'name' in user_input_lower and ('my' in user_input_lower or 'what' in user_input_lower):
-        name = user_profile.get('name', 'Unknown')
-        return f"Your name is {name}."
-    
-    if 'last message' in user_input_lower or 'what did i say' in user_input_lower:
-        last_message = memory_manager.get_last_user_message(session_id)
-        return f"Your last message was: \"{last_message}\""
-    
-    if 'age' in user_input_lower and 'my' in user_input_lower:
-        age = user_profile.get('age', 'Unknown')
-        return f"You are {age} years old."
-        
-    if 'country' in user_input_lower and 'my' in user_input_lower:
-        country = user_profile.get('country', 'Unknown')
-        return f"You are from {country}."
-    
-    return None
 
 def therapist_wrapper(user_input: str, user_profile: dict, session_id: str) -> str:
-    """Therapist agent with session-specific memory and strict document adherence"""
     
-    # Check if it's a personal info question first
-    if is_personal_info_question(user_input):
-        personal_response = handle_personal_info_question(user_input, session_id)
-        if personal_response:
-            memory_manager.add_interaction(session_id, user_input, personal_response)
-            return personal_response
-    
-    # Get context from documents
+    #Get context from documents
     raw_answer = get_therapy_context(user_input)
     chat_history = memory_manager.get_formatted_history(session_id)
     profile_summary = f"Name: {user_profile.get('name', 'Unknown')}, Age: {user_profile.get('age', 'Unknown')}, Country: {user_profile.get('country', 'Unknown')}, Financial Status: {user_profile.get('financial', 'Unknown')}"
     
-    # Strict document adherence check
-    if not raw_answer or len(raw_answer.strip()) < 20:  # Minimum meaningful content
+    #Strict document adherence check
+    if not raw_answer :
         fallback_response = "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
         memory_manager.add_interaction(session_id, user_input, fallback_response)
         return fallback_response
@@ -310,12 +275,12 @@ def therapist_wrapper(user_input: str, user_profile: dict, session_id: str) -> s
         response = llm.invoke(prompt)
         response_text = response.content if hasattr(response, "content") else str(response)
         
-        # Double-check if LLM followed instructions
+        #Double-check if LLM followed instructions
         if "I don't have specific information" in response_text:
             memory_manager.add_interaction(session_id, user_input, response_text)
             return response_text
         
-        # Update memory for this session
+        #Update memory for this session
         memory_manager.add_interaction(session_id, user_input, response_text)
         return response_text
         
@@ -332,8 +297,8 @@ def resource_wrapper(user_input: str, user_profile: dict, session_id: str) -> st
     chat_history = memory_manager.get_formatted_history(session_id)
     profile_summary = f"Name: {user_profile.get('name', 'Unknown')}, Age: {user_profile.get('age', 'Unknown')}, Country: {user_profile.get('country', 'Unknown')}, Financial Status: {user_profile.get('financial', 'Unknown')}"
     
-    # Strict document adherence check for resources
-    if not raw_answer or len(raw_answer.strip()) < 15:  # Minimum content for resources
+    #Strict document adherence check for resources
+    if not raw_answer :
         fallback_response = "I don't have specific resource information for your request. Could you try asking for mental health resources in a different way?"
         memory_manager.add_interaction(session_id, user_input, fallback_response)
         return fallback_response
@@ -349,7 +314,7 @@ def resource_wrapper(user_input: str, user_profile: dict, session_id: str) -> st
         response = llm.invoke(prompt)
         response_text = response.content if hasattr(response, "content") else str(response)
         
-        # Update memory for this session
+        #Update memory for this session
         memory_manager.add_interaction(session_id, user_input, response_text)
         return response_text
         
@@ -372,22 +337,22 @@ def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dic
     Returns:
         dict with agent, response, and session_id
     """
-    # Generate new session ID if not provided
+    #Generate new session ID if not provided
     if not session_id:
         session_id = memory_manager.generate_session_id()
         print(f"[DEBUG] Generated new session ID: {session_id}")
     else:
         print(f"[DEBUG] Using existing session ID: {session_id}")
     
-    # Load chat history from client if provided
+    #Load chat history from client if provided
     if chat_history:
         memory_manager.load_chat_history_from_client(session_id, chat_history, user_profile)
         print(f"[DEBUG] Loaded {len(chat_history)} messages from client history")
     
-    # Ensure user profile is stored for this session
+    #Ensure user profile is stored for this session
     memory_manager.get_or_create_memory(session_id, user_profile)
     
-    # Classify and route to appropriate agent
+    #Classify and route to appropriate agent
     agent = classify_agent(user_input)
     print(f"[DEBUG] Classified as: {agent}")
     
@@ -398,7 +363,7 @@ def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dic
         answer = therapist_wrapper(user_input, user_profile, session_id)
         agent_name = "Therapist"
     
-    # Cleanup old sessions periodically
+    #Cleanup old sessions periodically
     memory_manager.cleanup_old_sessions()
     
     return {
@@ -407,7 +372,7 @@ def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dic
         "session_id": session_id
     }
 
-# Utility functions for session management
+#Utility functions for session management
 def clear_user_session(session_id: str):
     """Clear conversation history for a specific session"""
     memory_manager.clear_session(session_id)
