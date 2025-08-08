@@ -57,6 +57,7 @@ def chat_handler():
     user_input = data.get("message", "")
     raw_user_profile = data.get("user_data", {})
     frontend_chat_history = data.get("chat_history", [])  # Get chat history from frontend
+    existing_session_id = data.get("session_id", None)  # Get existing session ID if available
     
     user_profile = normalize_user_profile(raw_user_profile)
     chat_history = convert_frontend_chat_to_backend_format(frontend_chat_history)
@@ -64,15 +65,17 @@ def chat_handler():
     print(f"[BeeWell] Received message: {user_input}") 
     print(f"[BeeWell] User profile for chat: {user_profile}")
     print(f"[BeeWell] Chat history length: {len(chat_history)}")
+    print(f"[BeeWell] Existing session ID: {existing_session_id}")
 
     try:
-        # Pass chat history to the multiagent chain
-        result = multiagent_chain(user_input, user_profile, chat_history)
+        # Pass chat history and session ID to the multiagent chain
+        result = multiagent_chain(user_input, user_profile, chat_history, existing_session_id)
         print(f"[BeeWell] AI Response: {result}")
         
         return jsonify({
             "agent": result.get("agent", "Therapist"),
-            "response": result.get("response", "I'm here to help. Could you tell me more about what's on your mind?")
+            "response": result.get("response", "I'm here to help. Could you tell me more about what's on your mind?"),
+            "session_id": result.get("session_id")  # Return session ID to client
         })
     except Exception as e:
         print(f"[BeeWell] Error: {str(e)}") 

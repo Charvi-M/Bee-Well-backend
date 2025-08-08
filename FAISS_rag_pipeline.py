@@ -30,7 +30,7 @@ class SessionMemoryManager:
         self.user_memories: Dict[str, ConversationBufferMemory] = {}
     
     def generate_session_id(self, user_profile: dict) -> str:
-        """Generate a unique session ID based on user profile"""
+        """Generate a unique session ID based on user profile (for first-time users)"""
         # Create a unique identifier from user profile
         profile_str = f"{user_profile.get('name', '')}{user_profile.get('timestamp', '')}"
         return hashlib.md5(profile_str.encode()).hexdigest()
@@ -104,24 +104,29 @@ memory_manager = SessionMemoryManager()
 
 embedding_model = FastEmbedLangChainWrapper(model_name="BAAI/bge-small-en-v1.5")
 
-# Prompt templates
+# Prompt templates with strict document adherence
 therapist_prompt = PromptTemplate(input_variables=["question", "raw_answer", "user_profile", "chat_history"], template="""
 You are a compassionate clinical psychologist speaking directly with a client.
 
 Client Profile: {user_profile}
 Previous Conversation: {chat_history}
 Client's Current Question: {question}
-Knowledge Base Insights: "{raw_answer}"
+Knowledge Base Information: "{raw_answer}"
 
-Remember this client's information from their profile and previous conversation. You can refer to their name, age, country, and other details naturally in conversation.
+IMPORTANT INSTRUCTIONS:
+- You MUST base your response ONLY on the information provided in the "Knowledge Base Information" above
+- If the Knowledge Base Information is empty, insufficient, or doesn't contain relevant information to answer the question, you MUST respond with: "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
+- Do NOT make up information or provide answers not supported by the retrieved knowledge
+- Remember this client's information from their profile and previous conversation
+- You can refer to their name, age, country naturally in conversation
 
-If the user provides symptoms, you must:
-1. List possible diagnoses in bullet points
+If the user provides symptoms AND the knowledge base has relevant information, you must:
+1. List possible diagnoses in bullet points (only if supported by the knowledge base)
 2. Include a disclaimer that you are an AI agent, not a professional
 3. Ask if they want professional help or want to talk about it
-4. If they want to talk, provide gentle and supportive guidance
+4. If they want to talk, provide gentle and supportive guidance based on the knowledge base
 
-Respond naturally and directly to the client. Do not use salutations and greetings like hello etc. Avoid saying stuff like of course here is a gentle and supportive reply because then the user will feel that you are not talking to them directly.
+Respond naturally and directly to the client only if you have relevant information in the knowledge base.
 
 Your response:
 """)
@@ -132,9 +137,14 @@ User Profile: {user_profile}
 Previous Conversation: {chat_history}
 Resources retrieved: "{raw_answer}"
 
-You are a mental health assistant. Suggest **only country-specific and free (if user is financially struggling or on a limited budget otherwise suggest paid resources too)** support links or helpline numbers.
+IMPORTANT INSTRUCTIONS:
+- You MUST base your response ONLY on the resources retrieved above
+- If no relevant resources are found or the retrieved information is insufficient, respond with: "I don't have specific resource information for your request. Could you try asking for mental health resources in a different way?"
+- Do NOT provide generic advice or make up resources
+
+You are a mental health assistant. Suggest **only country-specific and free (if user is financially struggling or on a limited budget otherwise suggest paid resources too)** support links or helpline numbers from the retrieved resources.
 Keep it short, practical, and clear.
-Output only contact options, links, or phone numbers:
+Output only contact options, links, or phone numbers that are found in the retrieved resources:
 """)
 
 classification_prompt = PromptTemplate(input_variables=["question"], template="""
@@ -177,10 +187,16 @@ def classify_agent(user_input: str) -> str:
     return result if result in ["therapist", "resource"] else "therapist"
 
 def therapist_wrapper(user_input: str, user_profile: dict, session_id: str) -> str:
-    """Therapist agent with session-specific memory"""
+    """Therapist agent with session-specific memory and strict document adherence"""
     raw_answer = get_therapy_context(user_input)
     chat_history = memory_manager.get_formatted_history(session_id)
     profile_summary = f"Country: {user_profile.get('country', 'unknown')}, Financial: {user_profile.get('financial', 'unknown')}, Name: {user_profile.get('name', 'unknown')}, Age: {user_profile.get('age', 'unknown')}"
+    
+    # Check if retrieved documents contain relevant information
+    if not raw_answer or len(raw_answer.strip()) < 50:  # Minimal content threshold
+        fallback_response = "I don't have specific information about that in my knowledge base. Could you ask something else related to mental health that I might be able to help with?"
+        memory_manager.add_interaction(session_id, user_input, fallback_response)
+        return fallback_response
     
     prompt = therapist_prompt.format(
         question=user_input, 
@@ -198,10 +214,16 @@ def therapist_wrapper(user_input: str, user_profile: dict, session_id: str) -> s
     return response_text
 
 def resource_wrapper(user_input: str, user_profile: dict, session_id: str) -> str:
-    """Resource agent with session-specific memory"""
+    """Resource agent with session-specific memory and strict document adherence"""
     raw_answer = get_resource_context(user_input)
     chat_history = memory_manager.get_formatted_history(session_id)
     profile_summary = f"Country: {user_profile.get('country', 'unknown')}, Financial: {user_profile.get('financial', 'unknown')}, Name: {user_profile.get('name', 'unknown')}, Age: {user_profile.get('age', 'unknown')}"
+    
+    # Check if retrieved documents contain relevant information
+    if not raw_answer or len(raw_answer.strip()) < 30:  # Minimal content threshold for resources
+        fallback_response = "I don't have specific resource information for your request. Could you try asking for mental health resources in a different way?"
+        memory_manager.add_interaction(session_id, user_input, fallback_response)
+        return fallback_response
     
     prompt = resource_prompt.format(
         question=user_input, 
@@ -218,7 +240,7 @@ def resource_wrapper(user_input: str, user_profile: dict, session_id: str) -> st
     
     return response_text
 
-def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dict] = None) -> dict:
+def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dict] = None, session_id: str = None) -> dict:
     """
     Main entry point for multi-agent chain with session management
     
@@ -226,12 +248,14 @@ def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dic
         user_input: Current user message
         user_profile: User profile information
         chat_history: Chat history from client's local storage 
+        session_id: Existing session ID from client (if available)
     
     Returns:
-        dict with agent and response
+        dict with agent, response, and session_id
     """
-    # Generate session ID
-    session_id = memory_manager.generate_session_id(user_profile)
+    # Use provided session_id or generate new one
+    if not session_id:
+        session_id = memory_manager.generate_session_id(user_profile)
     
     # Load chat history from client if provided
     if chat_history:
@@ -255,7 +279,8 @@ def multiagent_chain(user_input: str, user_profile: dict, chat_history: List[Dic
     
     return {
         "agent": agent_name,
-        "response": answer
+        "response": answer,
+        "session_id": session_id  # Return session_id to client
     }
 
 # Utility functions for session management
