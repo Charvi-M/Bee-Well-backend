@@ -176,7 +176,7 @@ INSTRUCTIONS:
 5. Use the client's name from their profile naturally in conversation
 6. Reference their previous messages when relevant and appropriate
 
-Be gentle, friendly, empathetic and compassionate. Avoid using greetings like hello etc. after the first greeting.
+Be gentle, friendly, empathetic and compassionate. Avoid using greetings like hello etc. after you have greeted once, But if client sends a greeting then respond politely with appropriate greeting.
 Your response:
 """)
 
